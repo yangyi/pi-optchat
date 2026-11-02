@@ -337,10 +337,16 @@ export class Children {
         if (provider) pi.registerProvider(o.model.provider, provider);
         // Same prompt as the main agent (AGENTS.md files, skills, cwd); only the OptChat preamble differs.
         // Read every run, so edits reach a live child's next run (after a pause, or a connected window's next message); Pi sends only the changed sections.
-        pi.on('before_agent_start', event => {
-          event.systemPromptOptions.customPrompt = allowSearch(`${SUBAGENT}\n\n${VIEW_DOC}${memorySearch ? SEARCH_DOC : ''}`, memorySearch);
-          event.systemPromptOptions.sections.instructions = [this.instructions(), delegates ? delegation(maxAgents, this.choice()) : NO_DELEGATION, STEERABLE, connected ? CONNECTED : NOT_CONNECTED].filter(Boolean).join('\n\n');
-          refreshContextFiles(event.systemPromptOptions);
+        pi.on('before_agent_start', (event: any) => {
+          const customPrompt = allowSearch(`${SUBAGENT}\n\n${VIEW_DOC}${memorySearch ? SEARCH_DOC : ''}`, memorySearch);
+          const subInstructions = [this.instructions(), delegates ? delegation(maxAgents, this.choice()) : NO_DELEGATION, STEERABLE, connected ? CONNECTED : NOT_CONNECTED].filter(Boolean).join('\n\n');
+          if (event.systemPromptOptions) {
+            event.systemPromptOptions.customPrompt = customPrompt;
+            event.systemPromptOptions.sections.instructions = subInstructions;
+            refreshContextFiles(event.systemPromptOptions);
+          } else if (event.systemPrompt) {
+            return { systemPrompt: [...event.systemPrompt, customPrompt, subInstructions] };
+          }
         });
         pi.on('before_provider_request', async (event, ctx) => {
           // Set by launch for a sibling's first request; a stop or an interrupt aborts the request, which ends the wait.

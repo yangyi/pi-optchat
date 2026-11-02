@@ -443,9 +443,17 @@ export default function optchat(pi: ExtensionAPI) {
     pi.appendEntry(RUN_BOUNDARY, { state: 'start' });
     // Pi's own prompt sections (AGENTS.md files, skills, cwd) stay; the profile's instructions go last.
     syncSearch(a.config);
-    event.systemPromptOptions.customPrompt = allowSearch(`${MASTER}\n\n${modelsHint(a.config.subagent)}\n\n${VIEW_DOC}${a.config.previousExchange ? CONTINUITY : ''}${a.config.memorySearch ? SEARCH_DOC : ''}`, a.config.memorySearch);
-    event.systemPromptOptions.sections.instructions = `${instructions(a.dir)}\n\n${IMPORT_GUIDANCE}`;
-    refreshContextFiles(event.systemPromptOptions);
+    const customPrompt = allowSearch(`${MASTER}\n\n${modelsHint(a.config.subagent)}\n\n${VIEW_DOC}${a.config.previousExchange ? CONTINUITY : ''}${a.config.memorySearch ? SEARCH_DOC : ''}`, a.config.memorySearch);
+    const optchatInstructions = `${instructions(a.dir)}\n\n${IMPORT_GUIDANCE}`;
+    if (event.systemPromptOptions) {
+      event.systemPromptOptions.customPrompt = customPrompt;
+      event.systemPromptOptions.sections.instructions = optchatInstructions;
+      refreshContextFiles(event.systemPromptOptions);
+    } else if (event.systemPrompt) {
+      const updated = [...event.systemPrompt, customPrompt, optchatInstructions];
+      prompt = event.prompt;
+      return { systemPrompt: updated };
+    }
     prompt = event.systemPrompt;
   });
   const DUPLICATE_REPORT = '(duplicate report, already delivered)';
