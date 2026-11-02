@@ -1,5 +1,5 @@
 import { getMarkdownTheme, keyText, UserMessageComponent, type ExtensionAPI, type ExtensionContext, type Theme } from '@earendil-works/pi-coding-agent';
-import { Container, Editor, getKeybindings, Loader, Markdown, Spacer, TruncatedText, TuiAltScreen, TuiMainScreen, type Component, type TUI } from '@earendil-works/pi-tui';
+import { Container, Editor, getKeybindings, Loader, Markdown, Spacer, TruncatedText, type Component, type TUI } from '@earendil-works/pi-tui';
 import type { AgentMessage } from '@earendil-works/pi-agent-core';
 import { connectWindow, type LiveState, type WindowEvent } from './window-bridge.ts';
 import { profilePath } from './profiles.ts';
@@ -147,7 +147,7 @@ export async function openConnectedWindow(pi: ExtensionAPI, ctx: ExtensionContex
   const failed = (what: string) => (error: unknown) => ctx.ui.notify(`Could not ${what}: ${error instanceof Error ? error.message : String(error)}`, 'error');
   /** The agent runs in the original window, so Esc and Alt+Up go there; only at the chat's editor, so dialogs and autocomplete keep them. */
   const unlisten = ctx.ui.onTerminalInput(data => {
-    const tui = liveTurn?.tui, focused = tui instanceof TuiMainScreen || tui instanceof TuiAltScreen ? tui.getFocusedComponent() : undefined;
+    const tui = liveTurn?.tui, focused = (tui && typeof (tui as any).getFocusedComponent === 'function') ? (tui as any).getFocusedComponent() : undefined;
     if (ended || !live?.queued || !(focused instanceof Editor) || focused.isShowingAutocomplete() || tui?.hasOverlay()) return;
     const keys = getKeybindings();
     if (keys.matches(data, 'app.interrupt') && live.state !== 'stopping' && statusState(live.state, live.agents) === 'working') {
